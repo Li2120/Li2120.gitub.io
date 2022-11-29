@@ -1,360 +1,328 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
-<head>
-	<meta http-equiv="Content-Type" content="text/html;charset=gb2312">
-	<style>
-		body{margin:0;padding:0;overflow: hidden;}
-		.city{width:100%;position:fixed;bottom: 0px;z-index: 100;}
-		.city img{width: 100%;}
-	</style>
-	<title>html5夜景放烟花绽放动画效果</title>
-</head>
-<body onselectstart = "return false">
-
-<div style="height:700px;overflow:hidden;">
-
-	<canvas id='cas' style="background-color:rgba(0,5,24,1);">浏览器不支持canvas</canvas>
-	<div class="city"><img src="img/city.png" alt="" /></div>
-	<img src="img/moon.png" alt="" id="moon" style="visibility: hidden;"/>
-	<div style="display:none">
-		<div class="shape">新年快乐</div>
-		<div class="shape">合家幸福</div>
-        <div class="shape">万事如意</div>
-        <div class="shape">心想事成</div>
-        <div class="shape">财源广进</div>
-	</div>
-	
-</div>
-	
-	<script>
-		var canvas = document.getElementById("cas");
-		var ocas = document.createElement("canvas");
-		var octx = ocas.getContext("2d");
-		var ctx = canvas.getContext("2d");
-		ocas.width = canvas.width = window.innerWidth;
-		ocas.height = canvas.height = 700;
-		var bigbooms = [];
-	
-		window.onload = function(){
-			initAnimate()
-		}
-
-		function initAnimate(){
-			drawBg();
-
-			lastTime = new Date();
-			animate();
-		}
-
-		var lastTime;
-		function animate(){
-			ctx.save();
-			ctx.fillStyle = "rgba(0,5,24,0.1)";
-			ctx.fillRect(0,0,canvas.width,canvas.height);
-			ctx.restore();
-
-
-			var newTime = new Date();
-            if(newTime-lastTime>500+(window.innerHeight-767)/2){
-				var random = Math.random()*100>2?true:false;
-				var x = getRandom(canvas.width/5 , canvas.width*4/5);
-				var y = getRandom(50 , 200);
-				if(random){
-					var bigboom = new Boom(getRandom(canvas.width/3,canvas.width*2/3) ,2,"#FFF" , {x:x , y:y});
-					bigbooms.push(bigboom)
-				}
-				else {
-					var bigboom = new Boom(getRandom(canvas.width/3,canvas.width*2/3) ,2,"#FFF" , {x:canvas.width/2 , y:200} , document.querySelectorAll(".shape")[parseInt(getRandom(0, document.querySelectorAll(".shape").length))]);
-					bigbooms.push(bigboom)
-				}
-				lastTime = newTime;
-				console.log(bigbooms)
-			}
-
-			stars.foreach(function(){
-				this.paint();
-			})
-
-			drawMoon();
-
-			bigbooms.foreach(function(index){
-				var that = this;
-				if(!this.dead){
-					this._move();
-					this._drawLight();
-				}
-				else{
-					this.booms.foreach(function(index){
-						if(!this.dead) {
-							this.moveTo(index);
-						}
-						else if(index === that.booms.length-1){
-							bigbooms[bigbooms.indexOf(that)] = null;
-						}
-					})
-				}
-			});
-			
-			raf(animate);
-		}
-
-		function drawMoon(){
-			var moon = document.getElementById("moon");
-			var centerX = canvas.width-200 , centerY = 100 , width = 80;
-			if(moon.complete){
-				ctx.drawImage(moon , centerX , centerY , width , width )
-			}
-			else {
-				moon.onload = function(){
-					ctx.drawImage(moon ,centerX , centerY , width , width)
-				}
-			}
-			var index = 0;
-			for(var i=0;i<10;i++){
-				ctx.save();
-				ctx.beginPath();
-				ctx.arc(centerX+width/2 , centerY+width/2 , width/2+index , 0 , 2*Math.PI);
-				ctx.fillStyle="rgba(240,219,120,0.005)";
-				index+=2;
-				ctx.fill();
-				ctx.restore();
-			}
-			
-		}
-
-		Array.prototype.foreach = function(callback){
-			for(var i=0;i<this.length;i++){
-				if(this[i]!==null) callback.apply(this[i] , [i])
-			}
-		}
-
-		var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) { window.setTimeout(callback, 1000 / 60); };
- 		
-		canvas.onclick = function(){
-			var x = event.clientX;
-			var y = event.clientY;
-			var bigboom = new Boom(getRandom(canvas.width/3,canvas.width*2/3) ,2,"#FFF" , {x:x , y:y});
-			bigbooms.push(bigboom)
-		}
-
-		// canvas.addEventLisener("touchstart" , function(event){
-		// 	var touch = event.targetTouches[0];
-		// 	var x = event.pageX;
-		// 	var y = event.pageY;
-		// 	var bigboom = new Boom(getRandom(canvas.width/3,canvas.width*2/3) ,2,"#FFF" , {x:x , y:y});
-		// 	bigbooms.push(bigboom)
-		// })
-
-		var Boom = function(x,r,c,boomArea,shape){
-			this.booms = [];
-			this.x = x;
-			this.y = (canvas.height+r);
-			this.r = r;
-			this.c = c;
-			this.shape = shape || false;
-			this.boomArea = boomArea;
-			this.theta = 0;
-			this.dead = false;
-			this.ba = parseInt(getRandom(80 , 200));
-		}
-		Boom.prototype = {
-			_paint:function(){
-				ctx.save();
-				ctx.beginPath();
-				ctx.arc(this.x,this.y,this.r,0,2*Math.PI);
-				ctx.fillStyle = this.c;
-				ctx.fill();
-				ctx.restore();
-			},
-			_move:function(){
-				var dx = this.boomArea.x - this.x , dy = this.boomArea.y - this.y;
-				this.x = this.x+dx*0.01;
-				this.y = this.y+dy*0.01;
-
-				if(Math.abs(dx)<=this.ba && Math.abs(dy)<=this.ba){
-					if(this.shape){
-						this._shapBoom();
-					}
-					else this._boom();
-					this.dead = true;
-				}
-				else {
-					this._paint();
-				}
-			},
-			_drawLight:function(){
-				ctx.save();
-				ctx.fillStyle = "rgba(255,228,150,0.3)";
-				ctx.beginPath();
-				ctx.arc(this.x , this.y , this.r+3*Math.random()+1 , 0 , 2*Math.PI);
-				ctx.fill();
-				ctx.restore();
-			},
-			_boom:function(){
-				var fragNum = getRandom(30 , 200);
-				var style = getRandom(0,10)>=5? 1 : 2;
-				var color;
-				if(style===1){
-					color = {
-						a:parseInt(getRandom(128,255)),
-						b:parseInt(getRandom(128,255)),
-						c:parseInt(getRandom(128,255))
-					}
-				}
-
-				var fanwei = parseInt(getRandom(300, 400));
-				for(var i=0;i<fragNum;i++){
-					if(style===2){
-						color = {
-							a:parseInt(getRandom(128,255)),
-							b:parseInt(getRandom(128,255)),
-							c:parseInt(getRandom(128,255))
-						}
-					}
-					var a = getRandom(-Math.PI, Math.PI);
-					var x = getRandom(0, fanwei) * Math.cos(a) + this.x;
-					var y = getRandom(0, fanwei) * Math.sin(a) + this.y; 
-					var radius = getRandom(0 , 2)
-					var frag = new Frag(this.x , this.y , radius , color , x , y );
-					this.booms.push(frag);
-				}
-			},
-			_shapBoom:function(){
-				var that = this;
-				putValue(ocas , octx , this.shape , 5, function(dots){
-					var dx = canvas.width/2-that.x;
-					var dy = canvas.height/2-that.y;
-					for(var i=0;i<dots.length;i++){
-						color = {a:dots[i].a,b:dots[i].b,c:dots[i].c}
-						var x = dots[i].x;
-						var y = dots[i].y;
-						var radius = 1;
-						var frag = new Frag(that.x , that.y , radius , color , x-dx , y-dy);
-						that.booms.push(frag);
-					}
-				})
-			}
-		}
-
-		function putValue(canvas , context , ele , dr , callback){
-			context.clearRect(0,0,canvas.width,canvas.height);
-			var img = new Image();
-			if(ele.innerHTML.indexOf("img")>=0){
-				img.src = ele.getElementsByTagName("img")[0].src;
-				imgload(img , function(){
-					context.drawImage(img , canvas.width/2 - img.width/2 , canvas.height/2 - img.width/2);
-					dots = getimgData(canvas , context , dr);
-					callback(dots);
-				})
-			}
-			else {
-				var text = ele.innerHTML;
-				context.save();
-				var fontSize =200;
-				context.font = fontSize+"px 宋体 bold";
-				context.textAlign = "center";
-				context.textBaseline = "middle";
-				context.fillStyle = "rgba("+parseInt(getRandom(128,255))+","+parseInt(getRandom(128,255))+","+parseInt(getRandom(128,255))+" , 1)";
-				context.fillText(text , canvas.width/2 , canvas.height/2);
-				context.restore();
-				dots = getimgData(canvas , context , dr);
-				callback(dots);
-			}
-		}
-
-		function imgload(img , callback){
-			if(img.complete){
-				callback.call(img);
-			}
-			else {
-				img.onload = function(){
-					callback.call(this);
-				}
-			}
-		}
-
-		function getimgData(canvas , context , dr){
-			var imgData = context.getImageData(0,0,canvas.width , canvas.height);
-			context.clearRect(0,0,canvas.width , canvas.height);
-			var dots = [];
-			for(var x=0;x<imgData.width;x+=dr){
-				for(var y=0;y<imgData.height;y+=dr){
-					var i = (y*imgData.width + x)*4;
-					if(imgData.data[i+3] > 128){
-						var dot = {x:x , y:y , a:imgData.data[i] , b:imgData.data[i+1] , c:imgData.data[i+2]};
-						dots.push(dot);
-					}
-				}
-			}
-			return dots;
-		}
-
-		function getRandom(a , b){
-			return Math.random()*(b-a)+a;
-		}
-
-
-		var maxRadius = 1 , stars=[];
-		function drawBg(){
-			for(var i=0;i<100;i++){
-				var r = Math.random()*maxRadius;
-				var x = Math.random()*canvas.width;
-				var y = Math.random()*2*canvas.height - canvas.height;
-				var star = new Star(x , y , r);
-				stars.push(star);
-				star.paint()
-			}
-
-		}
-
-		var Star = function(x,y,r){
-			this.x = x;this.y=y;this.r=r;
-		}
-		Star.prototype = {
-			paint:function(){
-				ctx.save();
-				ctx.beginPath();
-				ctx.arc(this.x , this.y , this.r , 0 , 2*Math.PI);
-				ctx.fillStyle = "rgba(255,255,255,"+this.r+")";
-				ctx.fill();
-				ctx.restore();
-			}
-		}
-
-		var focallength = 250;
-		var Frag = function(centerX , centerY , radius , color ,tx , ty){
-			this.tx = tx;
-			this.ty = ty;
-			this.x = centerX;
-			this.y = centerY;
-			this.dead = false;
-			this.centerX = centerX;
-			this.centerY = centerY;
-			this.radius = radius;
-			this.color = color;
-		}
-
-		Frag.prototype = {
-			paint:function(){
-				ctx.save();
-				ctx.beginPath();
-				ctx.arc(this.x , this.y , this.radius , 0 , 2*Math.PI);
-				ctx.fillStyle = "rgba("+this.color.a+","+this.color.b+","+this.color.c+",1)";
-				ctx.fill()
-				ctx.restore();
-			},
-			moveTo:function(index){
-				this.ty = this.ty+0.3;
-				var dx = this.tx - this.x , dy = this.ty - this.y;
-				this.x = Math.abs(dx)<0.1 ? this.tx : (this.x+dx*0.1);
-				this.y = Math.abs(dy)<0.1 ? this.ty : (this.y+dy*0.1);
-				if(dx===0 && Math.abs(dy)<=80){
-					this.dead = true;
-				}
-				this.paint();
-			}
-		}
-	</script>
-
-</body>
-</html>
+<!DOCTYPE HTML>  
+<html>  
+  <head>  
+    <title>Canvas 实现放烟花特效</title>  
+ <meta charset="utf-8">  
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">  
+    <meta name="viewport" content="width=device-width,height=device-height,inital-scale=1.0,maximum-scale=1.0,user-scalable=no">  
+    <style type="text/css">  
+  html,body{height:100%;margin:0;padding:0}   
+  ul,li{text-indent:0;text-decoration:none;margin:0;padding:0}   
+  img{border:0}   
+  body{background-color:#000;color:#999;font:100%/18px helvetica, arial, sans-serif}   
+  canvas{cursor:crosshair;display:block;left:0;position:absolute;top:0;z-index:20}   
+  #header img{width:100%; height:20%;}   
+  #bg img{width:100%; height:80%;}   
+  #header,#bg{position:fixed;left:0;right:0;z-index:10}   
+  #header{top:0}   
+  #bg{position:fixed;z-index:1;bottom:0}   
+  audio{position:fixed;display:none;bottom:0;left:0;right:0;width:100%;z-index:5}   
+ </style>  
+  </head>  
+  <body>  
+ <div id="bg">  
+  <img id="bgimg" src="http://img.ivsky.com/img/tupian/pre/201508/02/yuzhou_xingkong_yu_yueliang-006.jpg">  
+ </div>  
+ <script src="http://cdn.bootcss.com/jquery/2.2.0/jquery.min.js"></script>  
+ <script>  
+  $(function(){   
+   var Fireworks = function(){   
+    var self = this;   
+    // 产生烟花随机数   
+    var rand = function(rMi, rMa){   
+     //按位取反运算符   
+     return ~~((Math.random()*(rMa-rMi+1))+rMi);   
+    },hitTest = function(x1, y1, w1, h1, x2, y2, w2, h2){   
+     return !(x1 + w1 < x2 || x2 + w2 < x1 || y1 + h1 < y2 || y2 + h2 < y1);   
+    };   
+    //请求动画帧   
+    window.requestAnimFrame=function(){   
+     return window.requestAnimationFrame   
+      ||window.webkitRequestAnimationFrame   
+      ||window.mozRequestAnimationFrame   
+      ||window.oRequestAnimationFrame   
+      ||window.msRequestAnimationFrame   
+      ||function(callback){   
+       window.setTimeout(callback,1000/60);   
+      }   
+    }();   
+    self.init = function(){    
+     self.canvas = document.createElement('canvas');     
+     //canvas 全屏   
+     selfself.canvas.width = self.cw = $(window).innerWidth();   
+     selfself.canvas.height = self.ch = $(window).innerHeight();     
+     self.particles = [];    
+     self.partCount = 150;   
+     self.fireworks = [];    
+     selfself.mx = self.cw/2;   
+     selfself.my = self.ch/2;   
+     self.currentHue = 30;   
+     self.partSpeed = 5;   
+     self.partSpeedVariance = 10;   
+     self.partWind = 50;   
+     self.partFriction = 5;   
+     self.partGravity = 1;   
+     self.hueMin = 0;   
+     self.hueMax = 360;   
+     self.fworkSpeed = 4;   
+     self.fworkAccel = 10;   
+     self.hueVariance = 30;   
+     self.flickerDensity = 25;   
+     self.showShockwave = true;   
+     self.showTarget = false;   
+     self.clearAlpha = 25;   
+     $(document.body).append(self.canvas);   
+     selfself.ctx = self.canvas.getContext('2d');   
+     self.ctx.lineCap = 'round';   
+     self.ctx.lineJoin = 'round';   
+     self.lineWidth = 1;   
+     self.bindEvents();      
+     self.canvasLoop();   
+     self.canvas.onselectstart = function() {   
+      return false;   
+     };   
+    };     
+    // 创建粒子   
+    self.createParticles = function(x,y, hue){   
+     var countdown = self.partCount;   
+     while(countdown--){   
+      var newParticle = {   
+       x: x,   
+       y: y,   
+       coordLast: [   
+        {x: x, y: y},   
+        {x: x, y: y},   
+        {x: x, y: y}   
+       ],   
+       angle: rand(0, 360),   
+       speed: rand(((self.partSpeed - self.partSpeedVariance) <= 0) ? 1 : self.partSpeed - self.partSpeedVariance, (self.partSpeed + self.partSpeedVariance)),   
+       friction: 1 - self.partFriction/100,   
+       gravity: self.partGravity/2,   
+       hue: rand(hue-self.hueVariance, hue+self.hueVariance),   
+       brightness: rand(50, 80),   
+       alpha: rand(40,100)/100,   
+       decay: rand(10, 50)/1000,   
+       wind: (rand(0, self.partWind) - (self.partWind/2))/25,   
+       lineWidth: self.lineWidth   
+      };       
+      self.particles.push(newParticle);   
+     }   
+    };   
+    // 更新粒子   
+    self.updateParticles = function(){   
+     var i = self.particles.length;   
+     while(i--){   
+      var p = self.particles[i];   
+      var radians = p.angle * Math.PI / 180;   
+      var vx = Math.cos(radians) * p.speed;   
+      var vy = Math.sin(radians) * p.speed;   
+      p.speed *= p.friction;   
+      p.coordLast[2].x = p.coordLast[1].x;   
+      p.coordLast[2].y = p.coordLast[1].y;   
+      p.coordLast[1].x = p.coordLast[0].x;   
+      p.coordLast[1].y = p.coordLast[0].y;   
+      p.coordLast[0].x = p.x;   
+      p.coordLast[0].y = p.y;   
+      p.x += vx;   
+      p.y += vy;   
+      p.y += p.gravity;   
+      p.angle += p.wind;       
+      p.alpha -= p.decay;   
+      if(!hitTest(0,0,self.cw,self.ch,p.x-p.radius, p.y-p.radius, p.radius*2, p.radius*2) || p.alpha < .05){        
+       self.particles.splice(i, 1);    
+      }   
+     };   
+    };   
+    // 绘制粒子   
+    self.drawParticles = function(){   
+     var i = self.particles.length;   
+     while(i--){   
+      var p = self.particles[i];          
+      var coordRand = (rand(1,3)-1);   
+      self.ctx.beginPath();           
+      self.ctx.moveTo(Math.round(p.coordLast[coordRand].x), Math.round(p.coordLast[coordRand].y));   
+      self.ctx.lineTo(Math.round(p.x), Math.round(p.y));   
+      self.ctx.closePath();       
+      self.ctx.strokeStyle = 'hsla('+p.hue+', 100%, '+p.brightness+'%, '+p.alpha+')';   
+      self.ctx.stroke();       
+      if(self.flickerDensity > 0){   
+       var inverseDensity = 50 - self.flickerDensity;        
+       if(rand(0, inverseDensity) === inverseDensity){   
+        self.ctx.beginPath();   
+        self.ctx.arc(Math.round(p.x), Math.round(p.y), rand(p.lineWidth,p.lineWidth+3)/2, 0, Math.PI*2, false)   
+        self.ctx.closePath();   
+        var randrandAlpha = rand(50,100)/100;   
+        self.ctx.fillStyle = 'hsla('+p.hue+', 100%, '+p.brightness+'%, '+randAlpha+')';   
+        self.ctx.fill();   
+       }    
+      }   
+     };   
+    };   
+    // 创建烟花       
+    self.createFireworks = function(startX, startY, targetX, targetY){   
+     var newFirework = {   
+      x: startX,   
+      y: startY,   
+      startX: startX,   
+      startY: startY,   
+      hitX: false,   
+      hitY: false,   
+      coordLast: [   
+       {x: startX, y: startY},   
+       {x: startX, y: startY},   
+       {x: startX, y: startY}   
+      ],   
+      targetX: targetX,   
+      targetY: targetY,   
+      speed: self.fworkSpeed,   
+      angle: Math.atan2(targetY - startY, targetX - startX),   
+      shockwaveAngle: Math.atan2(targetY - startY, targetX - startX)+(90*(Math.PI/180)),   
+      acceleration: self.fworkAccel/100,   
+      hue: self.currentHue,   
+      brightness: rand(50, 80),   
+      alpha: rand(50,100)/100,   
+      lineWidth: self.lineWidth   
+     };      
+     self.fireworks.push(newFirework);   
+    };   
+    // 更新烟花   
+    self.updateFireworks = function(){   
+     var i = self.fireworks.length;   
+     while(i--){   
+      var f = self.fireworks[i];   
+      self.ctx.lineWidth = f.lineWidth;   
+      vx = Math.cos(f.angle) * f.speed,   
+      vy = Math.sin(f.angle) * f.speed;   
+      f.speed *= 1 + f.acceleration;       
+      f.coordLast[2].x = f.coordLast[1].x;   
+      f.coordLast[2].y = f.coordLast[1].y;   
+      f.coordLast[1].x = f.coordLast[0].x;   
+      f.coordLast[1].y = f.coordLast[0].y;   
+      f.coordLast[0].x = f.x;   
+      f.coordLast[0].y = f.y;   
+      if(f.startX >= f.targetX){   
+       if(f.x + vx <= f.targetX){   
+        ff.x = f.targetX;   
+        f.hitX = true;   
+       } else {   
+        f.x += vx;   
+       }   
+      } else {   
+       if(f.x + vx >= f.targetX){   
+        ff.x = f.targetX;   
+        f.hitX = true;   
+       } else {   
+        f.x += vx;   
+       }   
+      }   
+      if(f.startY >= f.targetY){   
+       if(f.y + vy <= f.targetY){   
+        ff.y = f.targetY;   
+        f.hitY = true;   
+       } else {   
+        f.y += vy;   
+       }   
+      } else {   
+       if(f.y + vy >= f.targetY){   
+        ff.y = f.targetY;   
+        f.hitY = true;   
+       } else {   
+        f.y += vy;   
+       }   
+      }       
+      if(f.hitX && f.hitY){   
+       self.createParticles(f.targetX, f.targetY, f.hue);   
+       self.fireworks.splice(i, 1);   
+      }   
+     };   
+    };   
+    // 绘制烟花   
+    self.drawFireworks = function(){   
+     var i = self.fireworks.length;   
+     self.ctx.globalCompositeOperation = 'lighter';   
+     while(i--){   
+      var f = self.fireworks[i];     
+      self.ctx.lineWidth = f.lineWidth;   
+      var coordRand = (rand(1,3)-1);        
+      self.ctx.beginPath();          
+      self.ctx.moveTo(Math.round(f.coordLast[coordRand].x), Math.round(f.coordLast[coordRand].y));   
+      self.ctx.lineTo(Math.round(f.x), Math.round(f.y));   
+      self.ctx.closePath();   
+      self.ctx.strokeStyle = 'hsla('+f.hue+', 100%, '+f.brightness+'%, '+f.alpha+')';   
+      self.ctx.stroke();    
+      if(self.showTarget){   
+       self.ctx.save();   
+       self.ctx.beginPath();   
+       self.ctx.arc(Math.round(f.targetX), Math.round(f.targetY), rand(1,8), 0, Math.PI*2, false)   
+       self.ctx.closePath();   
+       self.ctx.lineWidth = 1;   
+       self.ctx.stroke();   
+       self.ctx.restore();   
+      }   
+      if(self.showShockwave){   
+       self.ctx.save();   
+       self.ctx.translate(Math.round(f.x), Math.round(f.y));   
+       self.ctx.rotate(f.shockwaveAngle);   
+       self.ctx.beginPath();   
+       self.ctx.arc(0, 0, 1*(f.speed/5), 0, Math.PI, true);   
+       self.ctx.strokeStyle = 'hsla('+f.hue+', 100%, '+f.brightness+'%, '+rand(25, 60)/100+')';   
+       self.ctx.lineWidth = f.lineWidth;   
+       self.ctx.stroke();   
+       self.ctx.restore();   
+      }   
+     };   
+    };   
+    // 绑定事件   
+    self.bindEvents = function(){   
+     $(window).on('resize', function(){      
+      clearTimeout(self.timeout);   
+      self.timeout = setTimeout(function() {   
+       selfself.canvas.width = self.cw = $(window).innerWidth();   
+       selfself.canvas.height = self.ch = $(window).innerHeight();   
+       self.ctx.lineCap = 'round';   
+       self.ctx.lineJoin = 'round';   
+      }, 100);   
+     });   
+     $(self.canvas).on('mousedown', function(e){   
+      self.mx = e.pageX - self.canvas.offsetLeft;   
+      self.my = e.pageY - self.canvas.offsetTop;   
+      self.currentHue = rand(self.hueMin, self.hueMax);   
+      self.createFireworks(self.cw/2, self.ch, self.mx, self.my);    
+      $(self.canvas).on('mousemove.fireworks', function(e){   
+       self.mx = e.pageX - self.canvas.offsetLeft;   
+       self.my = e.pageY - self.canvas.offsetTop;   
+       self.currentHue = rand(self.hueMin, self.hueMax);   
+       self.createFireworks(self.cw/2, self.ch, self.mx, self.my);            
+      });       
+     });   
+     $(self.canvas).on('mouseup', function(e){   
+      $(self.canvas).off('mousemove.fireworks');            
+     });   
+    };   
+    self.clear = function(){   
+     self.particles = [];   
+     self.fireworks = [];   
+     self.ctx.clearRect(0, 0, self.cw, self.ch);   
+    };   
+    self.canvasLoop = function(){   
+     requestAnimFrame(self.canvasLoop, self.canvas);      
+     self.ctx.globalCompositeOperation = 'destination-out';   
+     self.ctx.fillStyle = 'rgba(0,0,0,'+self.clearAlpha/100+')';   
+     self.ctx.fillRect(0,0,self.cw,self.ch);   
+     self.updateFireworks();   
+     self.updateParticles();   
+     self.drawFireworks();      
+     self.drawParticles();   
+    };   
+    self.init();     
+   }   
+   var fworks = new Fireworks();   
+   $('#info-toggle').on('click', function(e){   
+    $('#info-inner').stop(false, true).slideToggle(100);   
+    e.preventDefault();   
+   });    
+  });   
+ </script>  
+ <canvas width="1400" height="449"></canvas>  
+  </body>  
+</html>  
